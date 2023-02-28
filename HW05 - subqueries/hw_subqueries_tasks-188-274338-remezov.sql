@@ -89,6 +89,16 @@ FROM
 WHERE
 	UnitPrice = (SELECT MIN(UnitPrice) FROM Warehouse.StockItems)
 
+-- вариант с ALL (медленнее, чем с MIN 69% против 31% и Table 'StockItems'. Scan count 2, logical reads 32 против Table 'StockItems'. Scan count 1, logical reads 1)
+SELECT
+	StockItemID
+	,StockItemName
+	,UnitPrice
+FROM
+	Warehouse.StockItems
+WHERE
+	UnitPrice <= ALL (SELECT UnitPrice FROM Warehouse.StockItems)
+
 --  вложенный запрос 2
 SELECT
 	StockItemID
