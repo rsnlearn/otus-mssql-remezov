@@ -44,6 +44,7 @@ InvoiceMonth | Aakriti Byrraju    | Abel Spirlea       | Abel Tatarescu | ... (�
 
 -- напишите здесь свое решение
 
+-- запрос с количеством купленных товаров по клиентам по месяцам
 DECLARE @sql NVARCHAR(MAX) = ''
 DECLARE @ColumnNames NVARCHAR(MAX) = NULL
 DECLARE @IsNullForSales NVARCHAR(MAX) = NULL
@@ -73,6 +74,41 @@ SELECT
 FROM cp
 PIVOT(
 	SUM(cp.Quantity)
+	FOR CustomerName IN (' + @ColumnNames + ')
+) PivotTable
+ORDER BY InvoiceMonth'
+
+EXEC sp_executesql @SQL
+
+-- запрос с количеством инвойсов по клиентам по месяцам
+DECLARE @sql NVARCHAR(MAX) = ''
+DECLARE @ColumnNames NVARCHAR(MAX) = NULL
+DECLARE @IsNullForSales NVARCHAR(MAX) = NULL
+
+SELECT @ColumnNames = ISNULL(@ColumnNames + N', ',N'') + QUOTENAME(CustomerName)
+FROM Sales.Customers
+ORDER BY CustomerName
+
+SELECT @IsNullForSales = ISNULL(@IsNullForSales + N', ',N'') + N'ISNULL(' + QUOTENAME(CustomerName) + ',0) AS ' + QUOTENAME(CustomerName)
+FROM Sales.Customers
+ORDER BY CustomerName
+
+SET @SQL = N'
+WITH
+cp AS (
+	SELECT
+		DATEFROMPARTS(YEAR(i.InvoiceDate), MONTH(i.InvoiceDate), 1) AS InvoiceMonth
+		,1 AS Quantity
+		,c.CustomerName
+	FROM Sales.Invoices i
+	INNER JOIN Sales.Customers c ON c.CustomerID = i.CustomerID
+)
+SELECT 
+	InvoiceMonth AS InvoiceMonth
+	,' + @IsNullForSales + '
+FROM cp
+PIVOT(
+	COUNT(cp.Quantity)
 	FOR CustomerName IN (' + @ColumnNames + ')
 ) PivotTable
 ORDER BY InvoiceMonth'
